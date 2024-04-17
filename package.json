@@ -1,0 +1,21 @@
+{
+  "name": "example-huahuaswap",
+  "version": "1.0.0",
+  "description": "Demo of liquidity module for huahua",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "github.com/Victor118/example-huahuaswapjs"
+  },
+  "author": "Victor118",
+  "license": "ISC",
+  "dependencies": {
+    "@victor118/liquidityjs": "^0.0.5",
+    "chain-registry": "^1.41.2",
+    "cosmjs-utils": "^0.1.0"
+  }
+}
