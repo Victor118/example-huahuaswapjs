@@ -49,7 +49,7 @@ const stargateClient = await getSigningVictor118Client({
 
   const liquidityParam = await client.Victor118.liquidity.v1beta1.params()
   let params = liquidityParam.params
-  console.log("Liquidity module params : ",params)
+  //console.log("Liquidity module params : ",params)
 
 switch(action){
     case "pools" :
@@ -57,7 +57,7 @@ switch(action){
         break;
     case "create-pool" :
         if(process.argv.length < 7){
-            console.error("Expected at least 3 arguments : create-pool denom1 denom2 ! ")
+            console.error("Expected at least 3 arguments : create-pool denom1 amount1 denom2 amount2 ! ")
             process.exit(1)
         }
         let denom1 = process.argv[3]
@@ -126,7 +126,7 @@ async function  listAllPools(){
     let pools  = await client.Victor118.liquidity.v1beta1.liquidityPools(allPoolsRequest)
   
     pools.pools.forEach(async (pool)=>{
-
+        console.log(pool)
       const allBalancesRequest = {
           address: pool.reserveAccountAddress
       }
