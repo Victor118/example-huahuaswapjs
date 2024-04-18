@@ -14,8 +14,8 @@
   "author": "Victor118",
   "license": "ISC",
   "dependencies": {
-    "@victor118/liquidityjs": "^0.0.5",
     "chain-registry": "^1.41.2",
-    "cosmjs-utils": "^0.1.0"
+    "cosmjs-utils": "^0.1.0",
+    "liquidityjs": "^0.0.6"
   }
 }
