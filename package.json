@@ -16,6 +16,6 @@
   "dependencies": {
     "chain-registry": "^1.41.2",
     "cosmjs-utils": "^0.1.0",
-    "liquidityjs": "^0.0.6"
+    "liquidityjs": "^0.0.9"
   }
 }

@@ -1,5 +1,4 @@
-import {tendermint} from "liquidityjs/dist/codegen/tendermint/bundle.js"
-import { getSigningTendermintClient } from 'liquidityjs/dist/codegen/tendermint/client.js';
+import {liquidity,getSigningLiquidityClient} from "liquidityjs"
 import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
 import { getOfflineSignerProto as getOfflineSigner } from 'cosmjs-utils';
 import { chains } from 'chain-registry';
@@ -19,7 +18,7 @@ if(process.argv.length < 3){
 let action = process.argv[2];
 
 
-const client = await tendermint.ClientFactory.createRPCQueryClient({
+const client = await liquidity.ClientFactory.createRPCQueryClient({
     "rpcEndpoint" : rpcAddress
   });
 
@@ -41,13 +40,13 @@ const signer = await getOfflineSigner({
     mnemonic,
     chain
   });
-const stargateClient = await getSigningTendermintClient({
+const stargateClient = await getSigningLiquidityClient({
     rpcEndpoint:rpcAddress,
     signer:wallet // OfflineSigner
   });
 
 
-  const liquidityParam = await client.tendermint.liquidity.v1beta1.params()
+  const liquidityParam = await client.liquidity.v1beta1.params()
   let params = liquidityParam.params
   //console.log("Liquidity module params : ",params)
 
@@ -123,7 +122,7 @@ async function balancesDemo (){
 async function  listAllPools(){
     const allPoolsRequest = {}
 
-    let pools  = await client.tendermint.liquidity.v1beta1.liquidityPools(allPoolsRequest)
+    let pools  = await client.liquidity.v1beta1.liquidityPools(allPoolsRequest)
   
     pools.pools.forEach(async (pool)=>{
         console.log(pool)
@@ -145,7 +144,7 @@ async function swap(idPool, denomToSell, amountToSell, denomWanted){
     const poolRequest = {
         poolId:idPool
     }
-    let pool = await client.tendermint.liquidity.v1beta1.liquidityPool(poolRequest)
+    let pool = await client.liquidity.v1beta1.liquidityPool(poolRequest)
     pool = pool.pool
     const allBalancesRequest = {
         address: pool.reserveAccountAddress
@@ -167,7 +166,7 @@ async function swap(idPool, denomToSell, amountToSell, denomWanted){
         maxAcceptedPrice = pricePool - slippageAmount
     }
 
-    const { swap } = tendermint.liquidity.v1beta1.MessageComposer.withTypeUrl;
+    const { swap } = liquidity.v1beta1.MessageComposer.withTypeUrl;
     let feeAmount = amountToSell * (params.swapFeeRate / 2)
     feeAmount = Math.ceil(feeAmount)+""
     let msgSwap = swap({
@@ -196,7 +195,7 @@ async function swap(idPool, denomToSell, amountToSell, denomWanted){
 
 
 async function createPool(denom1,amount1, denom2,amount2){
-    const { createPool } = tendermint.liquidity.v1beta1.MessageComposer.withTypeUrl;
+    const { createPool } = liquidity.v1beta1.MessageComposer.withTypeUrl;
     let msgCreatePool = createPool({
         poolCreatorAddress: address,
         poolTypeId: 1,
@@ -209,13 +208,33 @@ async function createPool(denom1,amount1, denom2,amount2){
         }],
         gas: "200000"
     }
+    console.log(msgCreatePool)
+    const response = await stargateClient.signAndBroadcast(address, [msgCreatePool], fee);
+    console.log(response)
+}
+
+async function send(to,denom,amount){
+    const { createPool } = liquidity.v1beta1.MessageComposer.withTypeUrl;
+    let msgCreatePool = createPool({
+        poolCreatorAddress: address,
+        poolTypeId: 1,
+        depositCoins: [{denom:denom1,amount:amount1},{denom:denom2,amount:amount2}]
+    })
+    let fee ={
+        amount:[{
+            amount: "200000000",
+            denom: "uhuahua"
+        }],
+        gas: "200000"
+    }
+    console.log(msgCreatePool)
     const response = await stargateClient.signAndBroadcast(address, [msgCreatePool], fee);
     console.log(response)
 }
 
 
 async function deposit(idPool,coin1,coin2){
-    const { depositWithinBatch } = tendermint.liquidity.v1beta1.MessageComposer.withTypeUrl;
+    const { depositWithinBatch } = liquidity.v1beta1.MessageComposer.withTypeUrl;
     let msgDeposit = depositWithinBatch({
         depositorAddress: address,
         poolId: idPool,
@@ -233,7 +252,7 @@ async function deposit(idPool,coin1,coin2){
 }
 
 async function withdraw(idPool, poolDenom, amountToWithdraw) {
-    const { withdrawWithinBatch } = tendermint.liquidity.v1beta1.MessageComposer.withTypeUrl;
+    const { withdrawWithinBatch } = liquidity.v1beta1.MessageComposer.withTypeUrl;
     let msgWithdraw = withdrawWithinBatch({
         withdrawerAddress: address,
         poolId: idPool,
