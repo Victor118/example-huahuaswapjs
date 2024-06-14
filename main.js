@@ -6,8 +6,9 @@ import { chains } from 'chain-registry';
 
 
 
-var rpcAddress = "http://localhost:26657"
-var lcdAddress = "http://localhost:1317/"
+//var rpcAddress = "http://37.187.38.191:26657/"
+var rpcAddress = "http://localhost:26657/"
+var lcdAddress = "http://37.187.38.191:1317/"
 
 
 
@@ -48,7 +49,7 @@ const stargateClient = await getSigningLiquidityClient({
 
   const liquidityParam = await client.liquidity.v1beta1.params()
   let params = liquidityParam.params
-  //console.log("Liquidity module params : ",params)
+  console.log("Liquidity module params : ",params)
 
 switch(action){
     case "pools" :
@@ -94,6 +95,18 @@ switch(action){
         let denomWanted = process.argv[6]
 
         swap(pool_id,denomToSell,amountToSell,denomWanted)
+        break
+    case "direct_swap" :
+        if(process.argv.length < 7){
+            console.error("Expected at least 5 arguments : direct_swap poolId denomToSell amountToSell denomWanted ! ")
+            process.exit(1)
+        }
+        let pool_id2 = process.argv[3]
+        let denomToSell2 = process.argv[4]
+        let amountToSell2 = process.argv[5]
+        let denomWanted2 = process.argv[6]
+
+        directSwap(pool_id2,denomToSell2,amountToSell2,denomWanted2)
         break
     case "withdraw" :
         if(process.argv.length < 6){
@@ -155,7 +168,7 @@ async function swap(idPool, denomToSell, amountToSell, denomWanted){
     poolBalances = poolBalances.balances
     let balanceDenom1 = poolBalances.find((coin)=> coin.denom === pool.reserveCoinDenoms[0])
     let balanceDenom2 = poolBalances.find((coin)=> coin.denom === pool.reserveCoinDenoms[1])
-    let pricePool = balanceDenom2.amount / balanceDenom1.amount
+    let pricePool = balanceDenom1.amount / balanceDenom2.amount
     console.log("1 "+pool.reserveCoinDenoms[0]+" = "+pricePool+" "+pool.reserveCoinDenoms[1])
     let maxAcceptedPrice = pricePool
     let acceptedSlippage = 0.05; //5% for the example
@@ -176,6 +189,61 @@ async function swap(idPool, denomToSell, amountToSell, denomWanted){
         offerCoin: {denom: denomToSell,amount:amountToSell},
         demandCoinDenom: denomWanted,
         offerCoinFee: {denom:denomToSell,amount:feeAmount+""},
+        orderPrice: maxAcceptedPrice+""
+    })
+
+    console.log("Msg ",msgSwap)
+
+    let fee ={
+        amount:[{
+            amount: "200000000",
+            denom: "uhuahua"
+        }],
+        gas: "200000"
+    }
+    const response = await stargateClient.signAndBroadcast(address, [msgSwap], fee);
+    console.log(response)
+ 
+}
+
+
+
+async function directSwap(idPool, denomToSell, amountToSell, denomWanted){
+
+    const poolRequest = {
+        poolId:idPool
+    }
+    let pool = await client.liquidity.v1beta1.liquidityPool(poolRequest)
+    pool = pool.pool
+    const allBalancesRequest = {
+        address: pool.reserveAccountAddress
+    }
+
+
+    let poolBalances  = await client.cosmos.bank.v1beta1.allBalances(allBalancesRequest)
+    poolBalances = poolBalances.balances
+    let balanceDenom1 = poolBalances.find((coin)=> coin.denom === pool.reserveCoinDenoms[0])
+    let balanceDenom2 = poolBalances.find((coin)=> coin.denom === pool.reserveCoinDenoms[1])
+    let pricePool = balanceDenom1.amount / balanceDenom2.amount
+    console.log("1 "+pool.reserveCoinDenoms[0]+" = "+pricePool+" "+pool.reserveCoinDenoms[1])
+    let maxAcceptedPrice = pricePool
+    let acceptedSlippage = 0.5; //10% for the example
+    let slippageAmount = pricePool * acceptedSlippage
+    if(denomToSell === pool.reserveCoinDenoms[0]){
+        maxAcceptedPrice = pricePool + slippageAmount
+    }else {
+        maxAcceptedPrice = pricePool - slippageAmount
+    }
+
+    const { directSwap } = liquidity.v1beta1.MessageComposer.withTypeUrl;
+    let feeAmount = amountToSell * (params.swapFeeRate / 2)
+    feeAmount = Math.ceil(feeAmount)+""
+    let msgSwap = directSwap({
+        swapRequesterAddress: address,
+        poolId: idPool,
+        swapTypeId: 1,
+        offerCoin: {denom: denomToSell,amount:amountToSell},
+        demandCoinDenom: denomWanted,
         orderPrice: maxAcceptedPrice+""
     })
 
